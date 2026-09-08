@@ -1,0 +1,20 @@
+[project]
+name = "mci-client"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Arman Rostami", email = "armanrostami1382@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "httpx>=0.28.1",
+    "ruff>=0.16.6",
+]
+
+[project.scripts]
+mci-client = "mci_client:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
