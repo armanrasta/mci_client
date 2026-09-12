@@ -1,0 +1,32 @@
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+    
+jobs:
+    lint:
+        name: Lint
+        runs-on: debian-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install uv latest
+              uses: astral-sh/setup-uv@v3
+              with:
+                version: "latest"
+                enable-cache: true
+        
+            - name: Set up Python
+              run: uv python install 3.14
+            
+            - name: Install dependencies
+              run: uv sync --all-extras
+            - name: Ruff check
+              run: uv run ruff check src tests
+
+            - name: Ruff format check
+              run: uv run ruff format --check src tests
+              
