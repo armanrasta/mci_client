@@ -1,6 +1,7 @@
 from __future__ import annotations
-from enum import Enum
+
 from dataclasses import dataclass, field
+from enum import Enum
 
 
 class NodeState(str, Enum):
@@ -15,9 +16,7 @@ class ClusterSnapshot:
 
     def is_converged(self, called_state: NodeState) -> bool:
         for state in self.states.values():
-            if state == NodeState.UNKNOWN:
-                return False
-            elif state != called_state:
+            if state == NodeState.UNKNOWN or state != called_state:
                 return False
         return True
     

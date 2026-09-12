@@ -1,13 +1,16 @@
+from enum import Enum
+
 import httpx
 import structlog
-from enum import Enum
-from tenacity import (retry,
-                      retry_if_exception_type,
-                      stop_after_attempt,
-                      stop_after_delay,
-                      wait_exponential)
-from .models import NodeState, ApplyResult
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    stop_after_delay,
+    wait_exponential,
+)
 
+from .models import ApplyResult, NodeState
 
 logger = structlog.get_logger(__name__)
 
@@ -21,7 +24,7 @@ class HttpMethods(str, Enum):
 class Client:
 
     def __init__(self,
-                 timeout: float|int = 5,
+                 timeout: float = 5,
                  attempts: int = 5,
                  max_retry_time: float = 60.0):
         self._client = httpx.AsyncClient(timeout=timeout)
@@ -63,7 +66,7 @@ class Client:
         
         try:
             response = await self._request(url=url, method=HttpMethods.GET)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning("get_state_failed", host=host, error=str(e))
             return NodeState.UNKNOWN
             
@@ -89,7 +92,7 @@ class Client:
 
         try:
             response = await self._request(url=url, method=HttpMethods.DELETE, json=payload)
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             logger.warning("delete_failed", host=host, error=str(e))
             return ApplyResult(host=host, success=False, status_code=None) # Didn't get a response because of raise, so we dont have an status code
             
@@ -115,7 +118,7 @@ class Client:
         
         try:
             response = await self._request(url=url, method=HttpMethods.POST, json=payload)
-        except Exception as e:
+        except Exception as e: # noqa: BLE001
             logger.warning("create_failed", host=host, error=str(e))
             return ApplyResult(host=host, success=False, status_code=None) # Didn't get a response because of raise, so we dont have an status code
             
