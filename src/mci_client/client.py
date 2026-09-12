@@ -10,7 +10,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from .models import ApplyResult, NodeState
+from mci_client.models import ApplyResult, NodeState
+from mci_client.schemas import GroupRequest
 
 logger = structlog.get_logger(__name__)
 
@@ -84,9 +85,7 @@ class Client:
     async def delete(self, host: str, group_id) -> ApplyResult:
         
         url = f"{host}/v1/group/"
-        payload = {
-               "groupId": group_id
-              }
+        payload = GroupRequest(groupId=group_id).model_dump(by_alias=True)
         
         logger.info("delete_started", host=host, group_id=group_id)
 
@@ -110,9 +109,7 @@ class Client:
     async def create(self, host: str, group_id) -> ApplyResult:
         
         url = f"{host}/v1/group/"
-        payload = {
-                   "groupId": group_id
-                  }
+        payload = GroupRequest(groupId=group_id).model_dump(by_alias=True)
         
         logger.info("create_started", host=host, group_id=group_id)
         
