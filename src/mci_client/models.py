@@ -20,14 +20,24 @@ class ClusterSnapshot:
             elif state != called_state:
                 return False
         return True
-
+    
     def drifted_nodes(self, called_state: NodeState) -> list[str]:
         return [
             host
             for host, state in self.states.items()
             if state != NodeState.UNKNOWN and state != called_state
         ]
-
+    
+    def is_consistent(self):
+        known_states = [s for s in self.states.values() if s != NodeState.UNKNOWN]
+        length = len(set(known_states))
+        
+        match length:
+            case 1: 
+                return True
+            case _:
+                return False
+        
 
 @dataclass
 class OperationContext:
