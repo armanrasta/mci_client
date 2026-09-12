@@ -19,7 +19,13 @@ class ReconciliationError(Exception):
 
 
 class Reconciler:
-    def __init__(self, hosts: list[str], client: Client, max_rounds: int = 5, round_delay: float = 0.5):
+    def __init__(
+        self,
+        hosts: list[str],
+        client: Client,
+        max_rounds: int = 5,
+        round_delay: float = 0.5,
+        ):
         
         self._hosts = hosts
         self._client = client
@@ -43,11 +49,18 @@ class Reconciler:
     async def close(self):
         await self._client.close()
         
-    async def reconcile(self, group_id: str, target_state: NodeState) -> ReconciliationReport:
+    async def reconcile(
+        self, group_id: str, target_state: NodeState
+    ) -> ReconciliationReport:
+        
         lock = self._get_lock(group_id)
         async with lock:
-            logger.info("reconciliation_started", group_id=group_id, target_state=target_state)
-            context = OperationContext(group_id=group_id, target_state=target_state)
+            logger.info(
+                "reconciliation_started", group_id=group_id, target_state=target_state
+            )
+            context = OperationContext(
+                group_id=group_id, target_state=target_state
+            )
             report = await self._run_reconciliation(context)
             
             if report.converged:
@@ -87,32 +100,43 @@ class Reconciler:
                 f"after {report.used_rounds} rounds"
             )
                 
-    async def  _snapshot(self, group_id: str) -> ClusterSnapshot:
+    async def _snapshot(self, group_id: str) -> ClusterSnapshot:
         tasks = [self._client.get_state(host, group_id) for host in self._hosts]
         states = dict(zip(self._hosts, await asyncio.gather(*tasks)))
         return ClusterSnapshot(states=states)
     
-    async def _apply_drift(self,
-                           drifted_nodes: list[str],
-                           group_id: str,
-                           target_state: NodeState) -> list[ApplyResult]:
+    async def _apply_drift(
+        self, drifted_nodes: list[str], group_id: str, target_state: NodeState
+    ) -> list[ApplyResult]:
         
         if target_state == NodeState.EXISTS:
             tasks = [self._client.create(host, group_id) for host in drifted_nodes]
         elif target_state == NodeState.ABSENT:
             tasks = [self._client.delete(host, group_id) for host in drifted_nodes]
         
-        results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks) # type: ignore
         
         for result in results:
             if result.success:
-                logger.info("apply_success", host=result.host, group_id=group_id, target_state=target_state) 
+                logger.info(
+                    "apply_success",
+                    host=result.host,
+                    group_id=group_id,
+                    target_state=target_state) 
             else:
-                logger.warning("apply_failure", host=result.host, group_id=group_id, target_state=target_state, status_code=result.status_code, msg=result.msg)     
+                logger.warning(
+                    "apply_failure",
+                    host=result.host,
+                    group_id=group_id,
+                    target_state=target_state,
+                    status_code=result.status_code,
+                    msg=result.msg)     
             
         return results     
 
-    async def _run_reconciliation(self, context: OperationContext) -> ReconciliationReport:
+    async def _run_reconciliation(
+        self, context: OperationContext
+    ) -> ReconciliationReport:
         
         for round_number in range(1, self._max_rounds + 1):
             context.round_number = round_number
