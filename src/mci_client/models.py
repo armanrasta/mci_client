@@ -65,3 +65,4 @@ class ApplyResult:
     host: str
     success: bool
     status_code: int | None = None
+    msg: str | None = None
