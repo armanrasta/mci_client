@@ -1,5 +1,4 @@
 import httpx
-import asyncio
 import structlog
 from enum import Enum
 from tenacity import (retry,
@@ -9,11 +8,14 @@ from tenacity import (retry,
                       wait_exponential)
 
 
+logger = structlog.get_logger(__name__)
+
+
 class HttpMethods(str, Enum):
     GET = "GET"
     POST = "POST"
     DELETE = "DELETE"
-    
+
 
 class Client:
 
@@ -33,7 +35,9 @@ class Client:
     
     async def _close(self):
         await self._client.aclose()
+        logger.info("Client Closed")
+        
     
-    async def _request(self, url: str, method:HttpMethods, json: dict):
+    async def _request(self, url: str, method:HttpMethods, json: dict) -> httpx.Response:
         return await self._retry(self._client.request)(method=method.value, url=url, json=json)
         
