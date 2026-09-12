@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass, field
 
 import structlog
 
@@ -50,19 +49,47 @@ class Reconciler:
             logger.info("reconciliation_started", group_id=group_id, target_state=target_state)
             context = OperationContext(group_id=group_id, target_state=target_state)
             report = await self._run_reconciliation(context)
-            logger.info(
-                "reconciliation_completed",
+            
+            if report.converged:
+                logger.info(
+                    "reconciliation_completed",
+                    group_id=group_id,
+                    target_state=target_state,
+                    report=report,
+                )
+                return report
+            
+            if target_state == NodeState.EXISTS:
+                logger.error(
+                    "reconciliation_failed_to_create_rolling_back",
+                    group_id=group_id,
+                    target_state=target_state,
+                    report=report,
+                )
+                rollback_context = OperationContext(group_id=group_id, target_state=NodeState.ABSENT)
+
+                rollback_report = await self._run_reconciliation(rollback_context)
+                logger.info(
+                    "rollback_completed",
+                    group_id=group_id,
+                    converged=rollback_report.converged,
+                    used_rounds=rollback_report.used_rounds,
+                )
+
+            logger.error(
+                "reconciliation_failed",
                 group_id=group_id,
-                target_state=target_state,
-                report=report,
+                target_state=target_state.value,
+                used_rounds=report.used_rounds,
             )
-            return report
-    
+            raise ReconciliationError(
+                f"failed to reconcile {group_id} to {target_state.value} "
+                f"after {report.used_rounds} rounds"
+            )
+                
     async def  _snapshot(self, group_id: str) -> ClusterSnapshot:
-        states = {}
-        for host in self._hosts:
-            state = await self._client.get_state(host, group_id)
-            states[host] = state
+        tasks = [self._client.get_state(host, group_id) for host in self._hosts]
+        states = dict(zip(self._hosts, await asyncio.gather(*tasks)))
         return ClusterSnapshot(states=states)
     
     async def _apply_drift(self,
@@ -85,7 +112,7 @@ class Reconciler:
             
         return results     
 
-    async def _run_reconciliation(self, context: OperationContext) -> ReconciliationReport:\
+    async def _run_reconciliation(self, context: OperationContext) -> ReconciliationReport:
         
         for round_number in range(1, self._max_rounds + 1):
             context.round_number = round_number
@@ -98,7 +125,7 @@ class Reconciler:
                         group_id=context.group_id,
                         round_number=round_number,
                         max_round_number=self._max_rounds,
-                        target_state=context.target_state,
+                        target_state=context.target_state.value,
                         states=snapshot.states,
                         consistent=snapshot.is_consistent(),
                         converged=snapshot.is_converged(context.target_state),
@@ -137,7 +164,7 @@ class Reconciler:
         return ReconciliationReport(
             group_id=context.group_id,
             state=context.target_state,
-            used_rounds=round_number,
+            used_rounds=self._max_rounds,
             converged=False,
             failures=failures,
             )
