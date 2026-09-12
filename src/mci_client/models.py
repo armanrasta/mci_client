@@ -5,9 +5,9 @@ from enum import Enum
 
 
 class NodeState(str, Enum):
-    EXISTS = 'exists'
-    ABSENT = 'absent'
-    UNKNOWN = 'unknown'
+    EXISTS = "exists"
+    ABSENT = "absent"
+    UNKNOWN = "unknown"
     
     
 @dataclass(frozen=True)
