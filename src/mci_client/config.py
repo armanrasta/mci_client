@@ -1,14 +1,15 @@
+from typing import Annotated
 from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, NoDecode
 
 
 class ClusterConfig(BaseSettings):
 
     model_config = {"env_prefix": "MCI_"}
 
-    hosts: list[str] = Field(
+    hosts: Annotated[list[str], NoDecode] = Field(
         ...,
         description="Hostname Importation is required.",
         examples=[

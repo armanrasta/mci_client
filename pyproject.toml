@@ -28,8 +28,29 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "respx>=0.23.1",
     "ruff>=0.16.6",
+    "pytest-cov>=6.0.0",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/mci_client"]
+branch = true
+omit = [
+    "src/mci_client/__main__.py",
+    "src/mci_client/logger.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "def __str__",
+    "def __repr__",
+    "def close",
+]
+show_missing = true

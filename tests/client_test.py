@@ -144,3 +144,13 @@ async def test_delete_network_error_returns_failure(client: Client):
         result = await client.delete("http://node1", "g1")
     assert result.success is False
     assert result.status_code is None
+
+@pytest.mark.asyncio
+async def test_delete_500_returns_failure(client: Client):
+    with respx.mock:
+        respx.delete("http://node1/v1/group/").mock(
+            return_value=httpx.Response(500)
+        )
+        result = await client.delete("http://node1", "g1")
+    assert result.success is False
+    assert result.status_code == 500

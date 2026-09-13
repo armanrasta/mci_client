@@ -113,6 +113,13 @@ class Reconciler:
             tasks = [self._client.create(host, group_id) for host in drifted_nodes]
         elif target_state == NodeState.ABSENT:
             tasks = [self._client.delete(host, group_id) for host in drifted_nodes]
+        else:
+            logger.warning(
+            "apply_drift_invalid_target",
+            group_id=group_id,
+            target_state=target_state.value,
+            )
+            return []
         
         results = await asyncio.gather(*tasks) # type: ignore
         
@@ -182,7 +189,7 @@ class Reconciler:
         
         if context.last_snapshot:
             failures = [h for h,s in context.last_snapshot.states.items() if s != context.target_state]
-        else:
+        else: # pragma: no cover 
             failures = []
             
         return ReconciliationReport(
