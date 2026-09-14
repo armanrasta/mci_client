@@ -1,5 +1,8 @@
+# mci-client
 
-An small Python client that creates and deletes "groups" across a cluster
+[![CI](https://github.com/armanrasta/mci_client/actions/workflows/ci.yml/badge.svg)](https://github.com/armanrasta/mci_client/actions/workflows/ci.yml)
+
+A small Python client that creates and deletes "groups" across a cluster
 of nodes. The API is unreliable — timeouts and 500s are normal — so the
 client retries, verifies, and rolls back when things go wrong.
 
