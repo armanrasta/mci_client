@@ -101,7 +101,7 @@ class Client:
                 return ApplyResult(host=host, success=True, status_code=200)
             case 404:
                 logger.info("delete_not_found", host=host, group_id=group_id, status=404)
-                return ApplyResult(host=host, success=False, status_code=404)
+                return ApplyResult(host=host, success=True, status_code=404)
             case _:
                 logger.warning("delete_failed_unexpected_status", host=host, group_id=group_id, status=response.status_code)
                 return ApplyResult(host=host, success=False, status_code=response.status_code)

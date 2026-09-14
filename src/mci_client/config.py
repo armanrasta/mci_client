@@ -2,12 +2,12 @@ from typing import Annotated
 from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, NoDecode
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class ClusterConfig(BaseSettings):
 
-    model_config = {"env_prefix": "MCI_"}
+    model_config = SettingsConfigDict(env_prefix="MCI_", env_file=".env")
 
     hosts: Annotated[list[str], NoDecode] = Field(
         ...,

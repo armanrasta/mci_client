@@ -1,0 +1,32 @@
+services:
+  mci_client:
+    build: 
+      context: .
+    image: mci-client:latest
+    environment:
+      MCI_HOSTS: "http://fake-node:8000"
+      MCI_ROUNDS: "3"
+      MCI_TIMEOUT: "5.0"
+      MCI_DELAY: "0.5"
+      MCI_ATTEMPTS: "3"
+      MCI_MAX_RETRY_TIME: "15.0"
+      MCI_LOG_LEVEL: "INFO"
+      MCI_HOST: "http"
+    command: ["create", "example-group"]
+    depends_on:
+      - fake-node
+    networks:
+      - mci
+
+  fake-node:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./dev/mock_node.py:/app/mock_node.py:ro
+    command: ["python", "/app/mock_node.py"]
+    networks:
+      - mci
+
+networks:
+  mci:
+    driver: bridge  

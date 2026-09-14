@@ -131,7 +131,7 @@ async def test_delete_404_returns_failure(client: Client):
             return_value=httpx.Response(404)
         )
         result = await client.delete("http://node1", "g1")
-    assert result.success is False
+    assert result.success is True
     assert result.status_code == 404
 
 
