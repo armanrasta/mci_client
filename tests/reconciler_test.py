@@ -7,7 +7,7 @@ import respx
 from mci_client.client import Client
 from mci_client.config import ClusterConfig
 from mci_client.models import NodeState
-from mci_client.reconciler import ReconciliationError, Reconciler
+from mci_client.reconciler import Reconciler, ReconciliationError
 
 
 @pytest.mark.asyncio
@@ -173,3 +173,92 @@ async def test_delete_failure_raises_without_rollback(config: ClusterConfig):
         )
         with pytest.raises(ReconciliationError):
             await reconciler.reconcile("g1", NodeState.ABSENT)
+            
+
+@pytest.mark.asyncio
+async def test_reconcile_with_no_record_writer(config: ClusterConfig):
+
+    with respx.mock:
+        for host in config.hosts:
+            respx.get(f"{host}/v1/group/g1/").mock(
+                return_value=httpx.Response(200, json={"groupId": "g1"})
+            )
+        client = Client(
+            timeout=config.timeout,
+            attempts=config.attempts,
+            max_retry_time=config.max_retry_time,
+        )
+        reconciler = Reconciler(
+            hosts=config.hosts,
+            client=client,
+            max_rounds=config.rounds,
+            round_delay=config.delay,
+            record_writer=None,
+        )
+        report = await reconciler.reconcile("g1", NodeState.EXISTS)
+
+    assert report.converged is True
+
+
+@pytest.mark.asyncio
+async def test_reconcile_writes_record(config: ClusterConfig, tmp_path):
+
+    from mci_client.recorder import RecordWriter
+
+    path = tmp_path / "records.jsonl"
+
+    with respx.mock:
+        for host in config.hosts:
+            respx.get(f"{host}/v1/group/g1/").mock(
+                return_value=httpx.Response(200, json={"groupId": "g1"})
+            )
+        client = Client(
+            timeout=config.timeout,
+            attempts=config.attempts,
+            max_retry_time=config.max_retry_time,
+        )
+        reconciler = Reconciler(
+            hosts=config.hosts,
+            client=client,
+            max_rounds=config.rounds,
+            round_delay=config.delay,
+            record_writer=RecordWriter(str(path)),
+        )
+        await reconciler.reconcile("g1", NodeState.EXISTS)
+
+    lines = path.read_text().strip().splitlines()
+    assert len(lines) == 1
+    import json
+    record = json.loads(lines[0])
+    assert record["group_id"] == "g1"
+    assert record["converged"] is True
+    
+
+@pytest.mark.asyncio
+async def test_record_failure_does_not_crash_reconcile(config: ClusterConfig):
+    """If the RecordWriter raises, reconcile still completes."""
+    class ExplodingWriter:
+        def write_record(self, report):
+            raise OSError("disk full")
+
+    with respx.mock:
+        for host in config.hosts:
+            respx.get(f"{host}/v1/group/g1/").mock(
+                return_value=httpx.Response(200, json={"groupId": "g1"})
+            )
+        client = Client(
+            timeout=config.timeout,
+            attempts=config.attempts,
+            max_retry_time=config.max_retry_time,
+        )
+        reconciler = Reconciler(
+            hosts=config.hosts,
+            client=client,
+            max_rounds=config.rounds,
+            round_delay=config.delay,
+            record_writer=ExplodingWriter().write_record, # type: ignore
+        )
+        report = await reconciler.reconcile("g1", NodeState.EXISTS)
+
+    assert report.converged is True
+

@@ -9,6 +9,7 @@ from mci_client.models import (
     ReconciliationReport,
 )
 from mci_client.reconciler import Reconciler, ReconciliationError
+from mci_client.recorder import RecordWriter
 
 __all__ = [
     "ApplyResult",
@@ -20,6 +21,6 @@ __all__ = [
     "Reconciler",
     "ReconciliationError",
     "ReconciliationReport",
-    "setup_logging",
-
+    "RecordWriter",
+    "setup_logging"
 ]

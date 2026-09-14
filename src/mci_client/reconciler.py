@@ -10,6 +10,7 @@ from .models import (
     OperationContext,
     ReconciliationReport,
 )
+from .recorder import RecordWriter
 
 logger = structlog.get_logger(__name__)
 
@@ -25,6 +26,7 @@ class Reconciler:
         client: Client,
         max_rounds: int = 5,
         round_delay: float = 0.5,
+        record_writer: RecordWriter | None = None
         ):
         
         self._hosts = hosts
@@ -33,6 +35,8 @@ class Reconciler:
         self._round_delay = round_delay
         # per-group locks — intra-client serialization
         self._locks: dict[str, asyncio.Lock] = {}
+        self._record_writer = record_writer
+
         
         logger.info(
             "reconciler_initialized",
@@ -68,8 +72,10 @@ class Reconciler:
                     "reconciliation_completed",
                     group_id=group_id,
                     target_state=target_state,
-                    report=report,
+                    used_rounds=report.used_rounds,
+                    report=report.converged,
                 )
+                self._record(report)
                 return report
             
             if target_state == NodeState.EXISTS:
@@ -82,6 +88,7 @@ class Reconciler:
                 rollback_context = OperationContext(group_id=group_id, target_state=NodeState.ABSENT)
 
                 rollback_report = await self._run_reconciliation(rollback_context)
+                self._record(rollback_report)
                 logger.info(
                     "rollback_completed",
                     group_id=group_id,
@@ -95,6 +102,7 @@ class Reconciler:
                 target_state=target_state.value,
                 used_rounds=report.used_rounds,
             )
+            self._record(report)
             raise ReconciliationError(
                 f"failed to reconcile {group_id} to {target_state.value} "
                 f"after {report.used_rounds} rounds"
@@ -199,4 +207,12 @@ class Reconciler:
             converged=False,
             failures=failures,
             )
+            
+    def _record(self, report: ReconciliationReport) -> None:
+        if self._record_writer is None:
+            return
+        try:
+            self._record_writer.write_record(report) 
+        except Exception as e:  # noqa: BLE001
+            logger.error("record_write_failed", error=str(e))
             
