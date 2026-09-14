@@ -152,7 +152,14 @@ class Reconciler:
     async def _run_reconciliation(
         self, context: OperationContext
     ) -> ReconciliationReport:
-        
+        """_summary_
+
+        Args:
+            context (OperationContext): _description_
+
+        Returns:
+            ReconciliationReport: _description_
+        """
         for round_number in range(1, self._max_rounds + 1):
             context.round_number = round_number
             

@@ -14,4 +14,4 @@ htmlcov/
 .venv
 .idea/
 .ruff_cache/
-.env*
+.env

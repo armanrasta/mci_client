@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mci-client-config
+data:
+  MCI_HOSTS: "http://fake-node:8000,"
+  MCI_ROUNDS: "5"
+  MCI_DELAY: "0.5"
+  MCI_ATTEMPTS: "5"
+  MCI_MAX_RETRY_TIME: "15.0"
+  MCI_LOG_LEVEL: "INFO"
